@@ -136,31 +136,79 @@ if page == "Manage Resources":
 #          PAGE 2 → RAG CHATBOT WITH DB SELECTION
 # ============================================================
 if page == "Ask Question Chatbot AI":
-    st.title("🤖 Ask Your Knowledge AI")
-    st.markdown(
-        "Select a resource and ask any question. The AI will provide answers based on your database documents."
-    )
-    st.divider()
+    st.title("📚 Knowledge Base AI Chatbot")
 
     # Load resources
     resources = get_all_resources()  # [(title, description)]
     titles = [r[0] for r in resources]
 
-    selected_title = st.selectbox("📚 Select Resource", titles)
+    selected_title = st.selectbox("Select Resource", titles)
     description = next((d for t, d in resources if t == selected_title), "")
-    if description:
-        st.markdown("**📝 Description:**")
-        st.info(description)
+    st.info(description)
 
     # User input
-    user_query = st.text_input("💬 Ask your question here:")
-    if st.button("🚀 Get Answer") and user_query:
+    user_query = st.text_input("Ask a question:")
+    if st.button("Ask") and user_query:
 
         # Spinner while processing
-        with st.spinner("🤖 AI is thinking... fetching the best answer for you..."):
-            answer = answer_query(user_query, selected_title)
+        with st.spinner("🤖 Generating answer, please wait..."):
+            try:
+                answer = answer_query(user_query, selected_title)
+                st.subheader("💬 Answer:")
+                st.write(answer)
+            except Exception as e:
+                err_msg = str(e)
+                if "Quota exceeded" in err_msg or "429" in err_msg:
+                    # Try to parse retry time from the error
+                    import re
+                    match = re.search(
+                        r"retry_delay.*?seconds: ([\d\.]+)", err_msg)
+                    retry_seconds = float(match.group(1)) if match else None
 
-        # Show answer after processing
-        st.success("✅ Answer generated!")
-        st.subheader("💡 Answer:")
-        st.write(answer)
+                    if retry_seconds:
+                        from datetime import datetime, timedelta
+                        retry_time = datetime.now() + timedelta(seconds=retry_seconds)
+                        retry_str = retry_time.strftime("%H:%M:%S")
+                        st.error(
+                            f"⚠️ API quota exceeded! You have reached the daily limit for Gemini API.\n"
+                            f"⏱ You can try again after approximately {int(retry_seconds)} seconds "
+                            f"(around {retry_str}).\n"
+                            f"More info: https://ai.google.dev/gemini-api/docs/rate-limits"
+                        )
+                    else:
+                        st.error(
+                            "⚠️ API quota exceeded! Please wait and try again later.\n"
+                            "More info: https://ai.google.dev/gemini-api/docs/rate-limits"
+                        )
+                else:
+                    st.error(f"❌ An error occurred: {err_msg}")
+
+# if page == "Ask Question Chatbot AI":
+#     st.title("🤖 Ask Your Knowledge AI")
+#     st.markdown(
+#         "Select a resource and ask any question. The AI will provide answers based on your database documents."
+#     )
+#     st.divider()
+
+#     # Load resources
+#     resources = get_all_resources()  # [(title, description)]
+#     titles = [r[0] for r in resources]
+
+#     selected_title = st.selectbox("📚 Select Resource", titles)
+#     description = next((d for t, d in resources if t == selected_title), "")
+#     if description:
+#         st.markdown("**📝 Description:**")
+#         st.info(description)
+
+#     # User input
+#     user_query = st.text_input("💬 Ask your question here:")
+#     if st.button("🚀 Get Answer") and user_query:
+
+#         # Spinner while processing
+#         with st.spinner("🤖 AI is thinking... fetching the best answer for you..."):
+#             answer = answer_query(user_query, selected_title)
+
+#         # Show answer after processing
+#         st.success("✅ Answer generated!")
+#         st.subheader("💡 Answer:")
+#         st.write(answer)
