@@ -1,4 +1,4 @@
-from agent import answer_query  # import your RAG function
+from newagent import answer_query  # import your RAG function
 import streamlit as st
 import os
 from dotenv import load_dotenv
